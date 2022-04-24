@@ -40,7 +40,7 @@ void PS2_EnterConfig(void);
 void PS2_AnalogMode(void);
 void PS2_ExitConfig(void);
 void PS2_Init(SPI_HandleTypeDef*, TIM_HandleTypeDef*, PS2Buttons*,
-		GPIO_TypeDef*, uint8_t);
+		GPIO_TypeDef*, uint16_t);
 void PS2_Update(void);
 
 #endif /* INC_PS2_PS2_H_ */

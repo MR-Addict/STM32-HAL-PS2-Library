@@ -52,7 +52,7 @@ void PS2_ExitConfig() {
 }
 
 void PS2_Init(SPI_HandleTypeDef *spi, TIM_HandleTypeDef *timer, PS2Buttons *ps2,
-		GPIO_TypeDef *ss_port, uint8_t ss_pin) {
+		GPIO_TypeDef *ss_port, uint16_t ss_pin) {
 	// Set hardware
 	PS2_SS_PORT = ss_port, PS2_SS_PIN = ss_pin;
 	PS2_SPI = spi, PS2_TIMER = timer, PS2_PS2 = ps2;
