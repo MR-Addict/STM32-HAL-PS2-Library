@@ -7,10 +7,7 @@
 
 #include "PS2.h"
 
-uint8_t PS2_SS_PIN;
 PS2Buttons *PS2_PS2;
-GPIO_TypeDef *PS2_SS_PORT;
-SPI_HandleTypeDef *PS2_SPI;
 TIM_HandleTypeDef *PS2_TIMER;
 
 void delay_us(uint16_t us) {
@@ -19,11 +16,35 @@ void delay_us(uint16_t us) {
 		;  // wait for the counter to reach the us input in the parameter
 }
 
-void PS2_Cmd(uint8_t *transmit, uint8_t *receive, uint8_t length) {
-	HAL_GPIO_WritePin(PS2_SS_PORT, PS2_SS_PIN, GPIO_PIN_RESET);
+uint8_t PS2_SendByte(uint8_t cmd) {
+	uint8_t data = 0x00;
+	uint16_t buffer = 0x01;
+	for (buffer = 0x01; buffer < 0x0100; buffer <<= 1) {
+		if (buffer & cmd) {
+			HAL_GPIO_WritePin(MOSI_GPIO_Port, MOSI_Pin, GPIO_PIN_SET);
+		} else {
+			HAL_GPIO_WritePin(MOSI_GPIO_Port, MOSI_Pin, GPIO_PIN_RESET);
+		}
+		HAL_GPIO_WritePin(SCK_GPIO_Port, SCK_Pin, GPIO_PIN_SET);
+		delay_us(8);
+		HAL_GPIO_WritePin(SCK_GPIO_Port, SCK_Pin, GPIO_PIN_RESET);
+		delay_us(8);
+		HAL_GPIO_WritePin(SCK_GPIO_Port, SCK_Pin, GPIO_PIN_SET);
+		if (HAL_GPIO_ReadPin(MISO_GPIO_Port, MISO_Pin)) {
+			data |= buffer;
+		}
+	}
 	delay_us(8);
-	HAL_SPI_TransmitReceive(PS2_SPI, transmit, receive, length, 10);
-	HAL_GPIO_WritePin(PS2_SS_PORT, PS2_SS_PIN, GPIO_PIN_SET);
+	return data;
+}
+
+void PS2_Cmd(uint8_t *transmit, uint8_t *receive, uint8_t length) {
+	HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_RESET);
+	delay_us(8);
+	for (uint8_t i = 0; i < length; i++) {
+		receive[i] = PS2_SendByte(transmit[i]);
+	}
+	HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_SET);
 	delay_us(8);
 }
 
@@ -51,11 +72,9 @@ void PS2_ExitConfig() {
 	PS2_Cmd(transmit, receive, 9);
 }
 
-void PS2_Init(SPI_HandleTypeDef *spi, TIM_HandleTypeDef *timer, PS2Buttons *ps2,
-		GPIO_TypeDef *ss_port, uint16_t ss_pin) {
+void PS2_Init(TIM_HandleTypeDef *timer, PS2Buttons *ps2) {
 	// Set hardware
-	PS2_SS_PORT = ss_port, PS2_SS_PIN = ss_pin;
-	PS2_SPI = spi, PS2_TIMER = timer, PS2_PS2 = ps2;
+	PS2_TIMER = timer, PS2_PS2 = ps2;
 	// Enable timer
 	HAL_TIM_Base_Start(PS2_TIMER);
 	// Enable analog mode
@@ -70,13 +89,12 @@ void PS2_Update() {
 	uint8_t transmit[9] = { 0x01, 0x42 };
 	uint8_t receive[9] = { 0x00 };
 	PS2_Cmd(transmit, receive, 9);
-	HAL_Delay(1);
 	if (receive[1] != 0x41 && receive[1] != 0x73) return;
 	uint16_t buttonStatus = receive[3] | (receive[4] << 8);
 	PS2_PS2->SELECT = !((buttonStatus >> 0) & 0x01);
 	PS2_PS2->L3 = !((buttonStatus >> 1) & 0x01);
 	PS2_PS2->R3 = !((buttonStatus >> 2) & 0x01);
-	PS2_PS2->START = !((buttonStatus >>3) & 0x01);
+	PS2_PS2->START = !((buttonStatus >> 3) & 0x01);
 	PS2_PS2->UP = !((buttonStatus >> 4) & 0x01);
 	PS2_PS2->RIGHT = !((buttonStatus >> 5) & 0x01);
 	PS2_PS2->DOWN = !((buttonStatus >> 6) & 0x01);

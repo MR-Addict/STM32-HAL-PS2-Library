@@ -8,23 +8,30 @@ This library is written for STM32 chips based on HAL libary.
 
 You need to use CubeMX or CubeIDE to configurate some Hardware preparations.
 
-#### 1.1.1 SPI Configuration
+#### 1.1.1 PS2 Pin Configuration
 
-First, choose a SPI Port, you need to pay more attention to the **red** box configuration.
+Actually, PS2 use SPI protocol, but here I decided to write my custom SPI protocol to comunicate with PS2. The biggest reason is that PS2 SPI communication speed is too slow, less than **250KHz**.
 
-At the same time, make sure that you SPI baudrate is under **250KHz**. If there's something wrong with communication, you may need to lower you baudrate. Here I choose 125KHz.
+So, you need to configuration four GPIOs for SPI communication, which are `MOSI,MISO,SCK,SS`. You can use any of STM32 GPIOs for these pins, their init status and name should be the same should be low:
+
+- MOSI -> GPIO_OUTPUT, HIGH
+- MISO -> GPIO_INPUT
+- SCK -> GPIO_OUTPUT, HIGH
+- SS -> GPIO_OUTPUT, HIGH
 
 ![SPI-Port](Images/SPI.png)
 
-And you also need to choose a SS pin for your SPI port. You can any GPIO as your SS Pin, but make sure SS Pin init status is **HIGH**.
-
-![SPI_SS](Images/SSPin.png)
-
 #### 1.1.2 Timer Configuraion
 
-Second, I use a timer to create a **delay_us** function. When you configurate timer, make sure that your timer is 1us per clock tick. For example, my system clock is **32MHz**, so my timer prescable should be **31**.
+Second, I use a timer to create a **delay_us** function. When you configurate timer, make sure that your timer is 1us per clock tick. For example, my system clock is **72MHz**, so my timer prescable should be **71**.
 
 ![Timer](Images/Timer.png)
+
+### 1.1.3 LED Configuration
+
+I use PC13 on-board LED to test my PS2 library, you can also configurate one for testing.
+
+![LED](Images/LED.png)
 
 ### 1.2 Library Configuration
 
@@ -51,7 +58,7 @@ PS2Buttons PS2;
 After this, you need to pass these argumemts to PS2_Init function
 
 ```c
-PS2_Init(&hspi1, &htim1, &PS2, SS_GPIO_Port, SS_Pin);
+PS2_Init(&htim1, &PS2);
 ```
 
 In your loop, you  need call PS2_Update every time you want to update PS2 Buttons, and you can use these buttons to finish some jobs.
@@ -64,6 +71,7 @@ while (1) {
   } else if (PS2.DOWN) {
     HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
   }
+  HAL_Delay(2);
 }
 ```
 

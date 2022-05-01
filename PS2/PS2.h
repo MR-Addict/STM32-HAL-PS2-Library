@@ -8,7 +8,7 @@
 #ifndef INC_PS2_PS2_H_
 #define INC_PS2_PS2_H_
 
-#include "stm32f1xx_hal.h"
+#include "main.h"
 
 typedef struct {
 	uint8_t SELECT;
@@ -34,13 +34,13 @@ typedef struct {
 } PS2Buttons;
 
 void delay_us(uint16_t);
+uint8_t PS2_SendByte(uint8_t);
 void PS2_Cmd(uint8_t *, uint8_t *, uint8_t );
 void PS2_Poll(void);
 void PS2_EnterConfig(void);
 void PS2_AnalogMode(void);
 void PS2_ExitConfig(void);
-void PS2_Init(SPI_HandleTypeDef*, TIM_HandleTypeDef*, PS2Buttons*,
-		GPIO_TypeDef*, uint16_t);
+void PS2_Init(TIM_HandleTypeDef*, PS2Buttons*);
 void PS2_Update(void);
 
 #endif /* INC_PS2_PS2_H_ */
